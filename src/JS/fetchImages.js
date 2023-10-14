@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+ 
 import { KEY } from './api-key.js';
 
 // Цей інтерцептор перехоплює відповіді на запити Axios.
