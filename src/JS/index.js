@@ -56,60 +56,54 @@ function renderGallery(images) {
   gallery.insertAdjacentHTML('beforeend', markup);
 }
 
-// Ця функція викликається при відправці форми пошуку.
-// Вона запобігає перезавантаженню сторінки за допомогою e.preventDefault().
-// Зчитує запит користувача з поля форми та очищує галерею.
-// Перевіряє, чи запит не порожній.
-// Викликає функцію fetchImages для отримання зображень з вказаним запитом.
-// Відображає результати в галереї, використовуючи renderGallery.
-// Відображає сповіщення про кількість знайдених зображень.
-function onSearchForm(e) {
+async function onSearchForm(e) {
   e.preventDefault();
-  currentPage = 1; // Скидаємо поточну сторінку до 1.
+  currentPage = 1;
   query = e.currentTarget.elements.searchQuery.value.trim();
   gallery.innerHTML = '';
-  loadMoreButton.style.display = 'none'; // Ховаємо кнопку "Load more" після нового запиту.
+  loadMoreButton.style.display = 'none';
 
   if (query === '') {
     Notiflix.Notify.failure(
-      'The search string cannot be empty. Please specify your search query.',
+      'The search string cannot be empty. Please specify your search query.'
     );
     return;
   }
 
-  fetchImages(query, currentPage, perPage)
-    .then(data => {
-      if (data.totalHits === 0) {
-        Notiflix.Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.',
-        );
-      } else {
-        renderGallery(data.hits);
-        simpleLightBox = new SimpleLightbox('.gallery a').refresh();
-        Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
-        loadMoreButton.style.display = 'block'; // Відображаємо кнопку "Load more" після отримання результатів.
+  try {
+    const data = await fetchImages(query, currentPage, perPage);
+    if (data.totalHits === 0) {
+      Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    } else {
+      renderGallery(data.hits);
+      simpleLightBox = new SimpleLightbox('.gallery a').refresh();
+      Notiflix.Notify.success(`Hooray! We found ${data.totalHits} images.`);
+      if (data.hits.length >= perPage) {
+        loadMoreButton.style.display = 'block';
       }
-    })
-    .catch(error => console.log(error))
-    .finally(() => {
-      searchForm.reset();
-    });
+    }
+  } catch (error) {
+    console.error('An error occurred:', error);
+  } finally {
+    searchForm.reset();
+  }
 }
 
-
-
-function onLoadMore() {
+async function onLoadMore() {
   currentPage += 1;
 
-  fetchImages(query, currentPage, perPage)
-    .then(data => {
-      if (data.hits.length === 0) {
-        loadMoreButton.style.display = 'none';
-        Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
-      } else {
-        renderGallery(data.hits);
-        simpleLightBox = new SimpleLightbox('.gallery a').refresh();
-      }
-    })
-    .catch(error => console.log(error));
+  try {
+    const data = await fetchImages(query, currentPage, perPage);
+    if (data.hits.length === 0) {
+      loadMoreButton.style.display = 'none';
+      Notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+    } else {
+      renderGallery(data.hits);
+      simpleLightBox = new SimpleLightbox('.gallery a').refresh();
+    }
+  } catch (error) {
+    console.error('An error occurred:', error);
+  }
 }
